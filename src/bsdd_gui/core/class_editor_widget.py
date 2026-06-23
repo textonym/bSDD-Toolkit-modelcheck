@@ -1,10 +1,12 @@
 from __future__ import annotations
 from PySide6.QtCore import QModelIndex, QCoreApplication
+from PySide6.QtWidgets import QWidget
 from typing import TYPE_CHECKING, Type
 from bsdd_json import BsddClass
 from bsdd_json.utils import class_utils as cl_utils
 from typing import get_args
 from bsdd_json.type_hints import COUNTRY_CODE, LANGUAGE_ISO_CODE, DOCUMENT_TYPE
+from bsdd_json.utils import class_utils,dictionary_utils
 
 if TYPE_CHECKING:
     from bsdd_gui import tool
@@ -16,7 +18,6 @@ def connect_signals(class_editor: Type[tool.ClassEditorWidget], project: Type[to
     class_editor.connect_signals()
     class_editor.signals.related_ifc_added.connect(project.signals.ifc_relation_addded.emit)
     class_editor.signals.related_ifc_removed.connect(project.signals.ifc_relation_removed.emit)
-
 
 def retranslate_ui(class_editor: Type[tool.ClassEditorWidget]):
     pass  # TODO
@@ -197,3 +198,18 @@ def group_classes(
         class_editor.signals.dialog_accepted.emit(dialog)
     else:
         class_editor.signals.dialog_declined.emit(dialog)
+
+def sync_code(changed_class:BsddClass,old_code:str, class_editor:type[tool.ClassEditorWidget],project:type[tool.Project]):
+    old_data = class_utils.build_bsdd_uri_data(changed_class,project.get())
+    old_data["resource_id"] = old_code
+    new_uri = class_utils.build_bsdd_uri(changed_class,project.get())
+    old_uri = dictionary_utils.build_bsdd_url(old_data)
+    class_editor.update_class_relations(old_uri,new_uri,project.get())
+
+def sync_name(changed_class:BsddClass,old_name:str, class_editor:type[tool.ClassEditorWidget],project:type[tool.Project]):
+    if changed_class.ClassType != "GroupOfProperties":
+        return
+    pset_uri = class_utils.build_bsdd_uri(changed_class,project.get())
+    class_editor.update_pset_reference(pset_uri,old_name,changed_class.Name,project.get())
+    for class_property in changed_class.ClassProperties:
+        class_property.PropertySet = changed_class.Name

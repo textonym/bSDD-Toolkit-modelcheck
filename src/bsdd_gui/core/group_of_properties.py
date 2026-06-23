@@ -163,7 +163,7 @@ def register_property_view(view: views.GopPropertyView, gop_view: Type[tool.GopP
     gop_view.register_view(view)
 
 
-def connect_class_view(view: views.GopPropertyView, gop_view: Type[tool.GopClassView]):
+def connect_class_view(view: views.GopClassView, gop_view: Type[tool.GopClassView]):
     gop_view.connect_view_signals(view)
 
 

@@ -25,7 +25,8 @@ class Signals(DialogSignals):
     )  # the class is not added to the Dictionary So far, this gets handled by ClassTree
     related_ifc_removed = Signal(BsddClass, str)  # class, ifc code
     related_ifc_added = Signal(BsddClass, str)  # class, ifc code
-
+    code_changed = Signal(BsddClass,str) # class, old_code
+    name_changed = Signal(BsddClass,str) # class, old_name
 
 class ClassEditorWidget(DialogTool):
     signals = Signals()
@@ -57,6 +58,8 @@ class ClassEditorWidget(DialogTool):
         cls.signals.edit_class_requested.connect(trigger.create_dialog)
         cls.signals.new_class_requested.connect(trigger.create_new_class)
         cls.signals.grouping_requested.connect(trigger.group_classes)
+        cls.signals.code_changed.connect(trigger.sync_code)
+        cls.signals.name_changed.connect(trigger.sync_name)
 
     @classmethod
     def connect_widget_signals(cls, widget: ui.ClassEditor):
@@ -117,7 +120,11 @@ class ClassEditorWidget(DialogTool):
         cls, widget: ui.EditDialog, element: BsddClass, explicit_field: QWidget = None
     ):
         related_ifc = set(element.RelatedIfcEntityNamesList or [])
+        old_name = element.Name
+        old_code = element.Code
         super().sync_to_model(widget, element, explicit_field)
+        new_name = element.Name
+        new_code = element.Code
         update_related_ifc = set(element.RelatedIfcEntityNamesList or [])
         added_ifc = update_related_ifc - related_ifc
         removed_ifc = related_ifc - update_related_ifc
@@ -126,6 +133,11 @@ class ClassEditorWidget(DialogTool):
             cls.signals.related_ifc_added.emit(element, ifc_code)
         for ifc_code in removed_ifc:
             cls.signals.related_ifc_removed.emit(element, ifc_code)
+
+        if old_code != new_code:
+            cls.signals.code_changed.emit(element,old_code)
+        if old_name != new_name:
+            cls.signals.name_changed.emit(element,old_name)
 
     @classmethod
     def apply_allowed_class_types(cls, allowed_class_types: str, widget: ui.ClassEditor):
@@ -140,3 +152,19 @@ class ClassEditorWidget(DialogTool):
         if class_type not in allowed_class_types:
             class_type = "Class" if "Class" in allowed_class_types else allowed_class_types[0]
         widget.cb_class_type.setCurrentText(class_type)
+
+    @classmethod
+    def update_class_relations(cls,old_uri:str,new_uri:str,bsdd_dictionary:BsddDictionary):
+        for cl in bsdd_dictionary.Classes:
+            for relationship in cl.ClassRelations:
+                if relationship.RelatedClassUri == old_uri:
+                    relationship.RelatedClassUri = new_uri
+    
+    @classmethod
+    def update_pset_reference(cls,pset_uri:str,old_pset_name,new_pset_name:str,bsdd_dictionary:BsddDictionary):
+        for bsdd_class in bsdd_dictionary.Classes:
+            if pset_uri not in [cr.RelatedClassUri for cr in bsdd_class.ClassRelations if cr.RelationType == "HasReference"]:
+                continue
+            for class_property in bsdd_class.ClassProperties:
+                if class_property.PropertySet == old_pset_name:
+                    class_property.PropertySet = new_pset_name

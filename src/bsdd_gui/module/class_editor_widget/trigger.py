@@ -52,3 +52,9 @@ def group_classes(
     core.group_classes(
         bsdd_classes, tool.ClassEditorWidget, tool.MainWindowWidget, tool.Project, class_tree_tool
     )
+
+def sync_code(bsdd_class:BsddClass,old_code:str):
+    core.sync_code(bsdd_class,old_code,tool.ClassEditorWidget,tool.Project)
+
+def sync_name(bsdd_class:BsddClass,old_name:str):
+    core.sync_name(bsdd_class,old_name,tool.ClassEditorWidget,tool.Project)

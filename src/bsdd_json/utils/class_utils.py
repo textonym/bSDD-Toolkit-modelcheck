@@ -297,9 +297,7 @@ def update_internal_relations_to_new_version(
             relationship.RelatedClassUri = dict_utils.build_bsdd_url(new_uri)
 
 
-def build_bsdd_uri(bsdd_class: BsddClass, bsdd_dictionary: BsddDictionary):
-    if not isinstance(bsdd_class, BsddClass):
-        return None
+def build_bsdd_uri_data(bsdd_class,bsdd_dictionary:BsddDictionary) -> dict_utils.UriDict:
     data = {
         "namespace": [bsdd_dictionary.OrganizationCode, bsdd_dictionary.DictionaryCode],
         "version": bsdd_dictionary.DictionaryVersion,
@@ -308,6 +306,13 @@ def build_bsdd_uri(bsdd_class: BsddClass, bsdd_dictionary: BsddDictionary):
     }
     if bsdd_dictionary.UseOwnUri:
         data["host"] = bsdd_dictionary.DictionaryUri
+    return data
+
+
+def build_bsdd_uri(bsdd_class: BsddClass, bsdd_dictionary: BsddDictionary):
+    if not isinstance(bsdd_class, BsddClass):
+        return None
+    data = build_bsdd_uri_data(bsdd_class,bsdd_dictionary)
 
     return dict_utils.build_bsdd_url(data)
 
