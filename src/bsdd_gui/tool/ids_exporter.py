@@ -128,31 +128,6 @@ class IdsExporter(ActionTool, FieldTool):
         tool.Appdata.set_path(var, path)
         return path
 
-    @classmethod
-    def build_inherited_checkstate_dict(
-        cls, bsdd_classes: list[BsddClass], checked_classes: list[BsddClass]
-    ):
-        def _iter_classes(child_classes: list[BsddClass], parent_checkstate: bool):
-            for child in child_classes:
-                checkstate = child in checked_classes and parent_checkstate
-                new_checkstate_dict[child.Code] = checkstate
-                _iter_classes(class_utils.get_children(child), checkstate)
-
-        new_checkstate_dict: dict[str, bool] = {}
-        root_classes = [c for c in bsdd_classes if not c.ParentClassCode]
-        _iter_classes(root_classes, True)
-        return new_checkstate_dict
-
-    @classmethod
-    def is_class_active(
-        cls, bsdd_class: BsddClass, class_settings: dict[str, bool], inherit_checkstates: bool
-    ):
-        checkstate = class_settings.get(bsdd_class.Code, True)
-        if not inherit_checkstates or not checkstate:
-            return checkstate
-        parent = bsdd_class.ParentClassCode
-        if not parent:
-            return checkstate
 
     @classmethod
     def is_class_prop_active(cls, class_prop: BsddClassProperty, property_settings: PsetDict):
@@ -521,10 +496,6 @@ class IdsExporter(ActionTool, FieldTool):
         logging.debug("Basic Classification created")
 
         cls.fill_ids_by_metadata(ids, metadata_settings)
-        if base_settings["inherit"]:
-            cs = cls.build_inherited_checkstate_dict(bsdd_dict.Classes, checked_classes)
-        else:
-            cs = {c.Code: True for c in checked_classes}
 
         sorted_classes = sorted(
             [c for c in checked_classes if c.ClassType == "Class"], key=lambda x: x.Code
@@ -533,7 +504,7 @@ class IdsExporter(ActionTool, FieldTool):
             "ids": ids,
             "sorted_classes": sorted_classes,
             "base_settings": base_settings,
-            "class_settings": cs,
+            "class_settings": {c.Code: True for c in checked_classes},
             "property_settings": property_settings,
             "bsdd_dict": bsdd_dict,
             "ifc_version": ifc_version,

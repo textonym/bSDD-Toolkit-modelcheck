@@ -28,45 +28,6 @@ def _make_dict() -> BsddDictionary:
 # ---------------------------------------------------------------------------
 
 
-class TestBuildInheritedCheckstateDict:
-    def test_empty_list(self):
-        result = IdsExporter.build_inherited_checkstate_dict([], {})
-        assert result == {}
-
-    def test_root_class_defaults_to_true(self):
-        cls = BsddClass(Code="A", Name="A")
-        result = IdsExporter.build_inherited_checkstate_dict([cls], {})
-        assert result["A"] is True
-
-    def test_root_class_disabled(self):
-        cls = BsddClass(Code="A", Name="A")
-        result = IdsExporter.build_inherited_checkstate_dict([cls], {"A": False})
-        assert result["A"] is False
-
-    def test_child_inherits_disabled_parent(self):
-        bsdd_dict = _make_dict()
-        parent = BsddClass(Code="P", Name="Parent")
-        child = BsddClass(Code="C", Name="Child", ParentClassCode="P")
-        bsdd_dict.Classes = [parent, child]
-        parent._set_parent(bsdd_dict)
-        child._set_parent(bsdd_dict)
-        # parent is disabled — child should also be False
-        result = IdsExporter.build_inherited_checkstate_dict([parent, child], {"P": False})
-        assert result["P"] is False
-        assert result["C"] is False
-
-    def test_child_stays_enabled_when_parent_enabled(self):
-        bsdd_dict = _make_dict()
-        parent = BsddClass(Code="P", Name="Parent")
-        child = BsddClass(Code="C", Name="Child", ParentClassCode="P")
-        bsdd_dict.Classes = [parent, child]
-        parent._set_parent(bsdd_dict)
-        child._set_parent(bsdd_dict)
-        result = IdsExporter.build_inherited_checkstate_dict([parent, child], {})
-        assert result["P"] is True
-        assert result["C"] is True
-
-
 # ---------------------------------------------------------------------------
 # is_class_active
 # ---------------------------------------------------------------------------
