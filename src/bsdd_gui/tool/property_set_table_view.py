@@ -180,9 +180,12 @@ class PropertySetTableView(ItemViewTool):
 
     @classmethod
     def create_connected_pset(
-        cls, pset_name: str, bsdd_class: BsddClass, bsdd_dictionary: BsddDictionary
+        cls, pset_name: str, bsdd_class: BsddClass, bsdd_dictionary: BsddDictionary,is_predefined:bool
     ):
-        pset_classes = [c for c in bsdd_dictionary.Classes if c.Name == pset_name]
+        if is_predefined:
+            pset_classes = [c for c in bsdd_dictionary.Classes if c.Name == pset_name and c.ClassType == "GroupOfProperties"]
+        else:
+            pset_classes = [c for c in bsdd_dictionary.Classes if c.Name == pset_name]
         if not pset_classes:
             return
         if len(pset_classes) > 1:

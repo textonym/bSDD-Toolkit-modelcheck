@@ -254,7 +254,7 @@ def create_new_property_set(
                 is_existing = False
             property_set_table.add_temporary_pset(bsdd_class, pset_name)
         else:
-            property_set_table.create_connected_pset(pset_name, bsdd_class, project.get())
+            property_set_table.create_connected_pset(pset_name, bsdd_class, project.get(),is_predefined)
     else:
         pset_name = util.get_unique_name(pset_name, existings_psets)
         property_set_table.add_temporary_pset(bsdd_class, pset_name)

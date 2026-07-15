@@ -468,7 +468,7 @@ class Util:
         cls.set_invalid(widget, not valid)
 
     @classmethod
-    def get_clipboard_content(cls, seperator: str = None):
+    def get_clipboard_content(cls, seperator: str = None):  
         def _data_to_text(d):
             raw = bytes(d)
             raw = raw.rstrip(b"\x00")
