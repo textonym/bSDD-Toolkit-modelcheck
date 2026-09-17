@@ -449,32 +449,47 @@ class FieldTool(WidgetTool):
         Listen to changes in the field and emit a signal with the widget and field as arguments.
         """
         w = widget
-        r_field = field  # return field -> to wich the model is synced
-        c_field = field  # connect field -> to wich the signal is connected
+        f = field
+        def func():
+            cls.signals.field_changed.emit(w, f)
+        cls._connect_func_to_fieldchange(field,  func)
 
-        if isinstance(c_field, ItemWithToggleSwitch):
-            c_field.active_toggle.toggled.connect(
-                lambda: cls.signals.field_changed.emit(w, r_field)
-            )
-            c_field = c_field.item
-        if isinstance(c_field, QLineEdit):
-            c_field.textChanged.connect(lambda: cls.signals.field_changed.emit(w, r_field))
-        elif isinstance(c_field, QComboBox):
-            c_field.currentTextChanged.connect(lambda: cls.signals.field_changed.emit(w, r_field))
-        elif isinstance(c_field, QTextEdit):
-            c_field.textChanged.connect(lambda: cls.signals.field_changed.emit(w, r_field))
-        elif isinstance(c_field, QCheckBox):
-            c_field.checkStateChanged.connect(lambda: cls.signals.field_changed.emit(w, r_field))
-        elif isinstance(c_field, TagInput):
-            c_field.tagsChanged.connect(lambda: cls.signals.field_changed.emit(w, r_field))
-        elif isinstance(c_field, QDateTimeEdit):
-            c_field.dateTimeChanged.connect(lambda: cls.signals.field_changed.emit(w, r_field))
-        elif isinstance(c_field, QAbstractButton):
-            c_field.toggled.connect(lambda: cls.signals.field_changed.emit(w, r_field))
-        elif isinstance(c_field, QSpinBox):
-            c_field.valueChanged.connect(lambda: cls.signals.field_changed.emit(w, r_field))
-        elif isinstance(c_field, QDoubleSpinBox):
-            c_field.valueChanged.connect(lambda: cls.signals.field_changed.emit(w, r_field))
+    @classmethod
+    def _connect_func_to_fieldchange(cls, field:QWidget,func:callable):
+
+        if isinstance(field, ItemWithToggleSwitch):
+                    field.active_toggle.toggled.connect(func)
+                    field = field.item
+        if isinstance(field, QLineEdit):
+            field.textChanged.connect(func)
+        elif isinstance(field, QComboBox):
+            field.currentTextChanged.connect(func)
+        elif isinstance(field, QTextEdit):
+            field.textChanged.connect(func)
+        elif isinstance(field, QCheckBox):
+            field.checkStateChanged.connect(func)
+        elif isinstance(field, TagInput):
+            field.tagsChanged.connect(func)
+        elif isinstance(field, QDateTimeEdit):
+            field.dateTimeChanged.connect(func)
+        elif isinstance(field, QAbstractButton):
+            field.toggled.connect(func)
+        elif isinstance(field, QSpinBox):
+            field.valueChanged.connect(func)
+        elif isinstance(field, QDoubleSpinBox):
+            field.valueChanged.connect(func)
+        else:
+            logging.info("ClassType not Found")
+            return
+
+    @classmethod
+    def is_field_valid(cls,widget,field) -> bool:
+        """
+        Checks if the value of a given field is valid based on the registered validators.
+        If no Validator is registered for the field, it is considered valid by default.
+        """
+        validator_functions = cls.get_properties().validator_functions.get(widget, {}).get(field, [])
+        return all(vf(cls.get_value_from_field(field), widget) for vf, _ in validator_functions)
 
     @classmethod
     def add_validator(cls, widget, field, validator_function: callable, result_function: callable):
@@ -515,34 +530,11 @@ class FieldTool(WidgetTool):
         rf, vf, f, w = result_function, validator_function, field, widget
 
         def func():
-            rf(f, vf(cls.get_value_from_field(f), w))
+            rf(f, vf(cls.get_value_from_field(f), w))       
 
-        if isinstance(f, ItemWithToggleSwitch):
-            f.active_toggle.toggled.connect(func)
-            f = f.item
-
-        if isinstance(f, QLineEdit):
-            f.textChanged.connect(func)
-        elif isinstance(f, QComboBox):
-            f.currentTextChanged.connect(func)
-        elif isinstance(f, QTextEdit):
-            f.textChanged.connect(func)
-        elif isinstance(f, QCheckBox):
-            f.checkStateChanged.connect(func)
-        elif isinstance(f, TagInput):
-            f.tagsChanged.connect(func)
-        elif isinstance(f, QDateTimeEdit):
-            f.dateTimeChanged.connect(func)
-        elif isinstance(f, QAbstractButton):
-            f.toggled.connect(func)
-        elif isinstance(f, QSpinBox):
-            f.valueChanged.connect(func)
-        elif isinstance(f, QDoubleSpinBox):
-            f.valueChanged.connect(func)
-        else:
-            logging.info("ClassType not Found")
-            return
+        cls._connect_func_to_fieldchange(field, func)
         func()  # initial validation
+
 
     @classmethod
     def get_value_from_field(cls, field: QWidget):
@@ -637,7 +629,8 @@ class FieldTool(WidgetTool):
             if explicit_field is not None and explicit_field != field:
                 continue
             value = cls.get_value_from_field(field)
-            setter_func(element, value)
+            if cls.is_field_valid(widget,field):
+                setter_func(element, value)
 
     @classmethod
     def all_inputs_are_valid(cls, widget: FieldWidget):
