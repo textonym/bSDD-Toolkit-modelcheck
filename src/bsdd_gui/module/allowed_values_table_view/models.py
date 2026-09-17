@@ -77,10 +77,20 @@ class AllowedValuesModel(ItemModel):
         return index
 
     def flags(self, index):
+        allowed_value = index.internalPointer()
+        if allowed_value is None:
+            return super().flags(index)
+
         parent_av = self.parent_property.AllowedValues if self.parent_property else []
-        if index.internalPointer() in parent_av:
+        own_av = self.bsdd_data.AllowedValues if self.bsdd_data else []
+
+        if any(av is allowed_value for av in parent_av):
             return super().flags(index) & ~Qt.ItemFlag.ItemIsEnabled
-        return super().flags(index) | Qt.ItemFlag.ItemIsEditable
+
+        if any(av is allowed_value for av in own_av):
+            return super().flags(index) | Qt.ItemFlag.ItemIsEditable
+
+        return super().flags(index)
 
 
 # typing

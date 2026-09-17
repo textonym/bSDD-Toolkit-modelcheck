@@ -153,13 +153,14 @@ def item_paste_event(
                 line.append(dict_utils.slugify(line[0]))
             else:
                 continue
-        pasted_code = line[code_index]
+        pasted_code = dict_utils.slugify(line[code_index])
         if str(pasted_code).lower() in existing_codes:
             continue
         else:
             existing_codes.add(str(pasted_code))
 
         row_count = allowed_values_table.append_new_value(view)
+        line[code_index] = dict_utils.slugify(line[code_index])
         for col_index, value in enumerate(line):
             if not isinstance(value, (str, int, float)):
                 continue
