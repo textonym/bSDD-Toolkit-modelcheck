@@ -254,7 +254,9 @@ def create_new_property_set(
                 is_existing = False
             property_set_table.add_temporary_pset(bsdd_class, pset_name)
         else:
-            property_set_table.create_connected_pset(pset_name, bsdd_class, project.get(),is_predefined)
+            property_set_table.create_connected_pset(
+                pset_name, bsdd_class, project.get(), is_predefined
+            )
     else:
         pset_name = util.get_unique_name(pset_name, existings_psets)
         property_set_table.add_temporary_pset(bsdd_class, pset_name)
@@ -340,9 +342,13 @@ def delete_selection(
 
     bsdd_class = view.model().sourceModel().active_class
     selected_psets = property_set_table.get_selected(view)
+    if not bsdd_class:
+        return
+
     for prop in list(bsdd_class.ClassProperties):
         if prop.PropertySet in selected_psets:
             property_table.remove_property(bsdd_class, prop)
+
     for pset in selected_psets:
         if property_set_table.is_temporary_pset(bsdd_class, pset):
             property_set_table.remove_temporary_pset(bsdd_class, pset)

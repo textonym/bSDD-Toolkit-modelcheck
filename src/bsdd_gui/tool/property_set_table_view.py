@@ -1,14 +1,19 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Type
+
 import logging
 from types import ModuleType
-import bsdd_gui
-from PySide6.QtCore import QModelIndex, Signal, Qt, QCoreApplication
-from PySide6.QtWidgets import QComboBox
-from bsdd_gui.module.property_set_table_view import ui, models, trigger
-from bsdd_gui.presets.tool_presets import ViewSignals, ItemViewTool
-from bsdd_json.models import BsddDictionary, BsddClass, BsddClassRelation
+from typing import TYPE_CHECKING
+
+from bsdd_json.models import BsddClass, BsddClassRelation, BsddDictionary
 from bsdd_json.utils import class_utils
+from PySide6.QtCore import QCoreApplication, QModelIndex, Qt, Signal
+from PySide6.QtWidgets import QComboBox
+
+import bsdd_gui
+from bsdd_gui.module.property_set_table_view import models, trigger, ui
+from bsdd_gui.presets.tool_presets import ItemViewTool, ViewSignals
+from bsdd_json.utils import dictionary_utils
+
 
 if TYPE_CHECKING:
     from bsdd_gui.module.property_set_table_view.prop import (
@@ -33,7 +38,7 @@ class PropertySetTableView(ItemViewTool):
         return bsdd_gui.PropertySetTableViewProperties
 
     @classmethod
-    def _get_model_class(cls) -> Type[models.PsetTableModel]:
+    def _get_model_class(cls) -> type[models.PsetTableModel]:
         return models.PsetTableModel
 
     @classmethod
@@ -45,17 +50,20 @@ class PropertySetTableView(ItemViewTool):
         trigger.delete_selection(view)
 
     @classmethod
-    def _get_proxy_model_class(cls) -> Type[models.SortModel]:
+    def _get_proxy_model_class(cls) -> type[models.SortModel]:
         return models.SortModel
 
     @classmethod
-    def connect_internal_signals(cls):
+    def connect_internal_signals(
+        cls,
+    ):
         super().connect_internal_signals()
         cls.signals.new_property_set_requested.connect(trigger.new_property_set_requested)
         cls.signals.rename_selection_requested.connect(
             lambda view: view.edit([i for i in view.selectedIndexes() if i.column() == 0][0])
         )
         cls.signals.property_set_added.connect(lambda _: cls.signals.model_refresh_requested.emit())
+        cls.signals.property_set_deleted.connect(cls.remove_pset_relation)
 
     @classmethod
     def connect_view_signals(cls, view: ui.PsetTableView):
@@ -180,10 +188,18 @@ class PropertySetTableView(ItemViewTool):
 
     @classmethod
     def create_connected_pset(
-        cls, pset_name: str, bsdd_class: BsddClass, bsdd_dictionary: BsddDictionary,is_predefined:bool
+        cls,
+        pset_name: str,
+        bsdd_class: BsddClass,
+        bsdd_dictionary: BsddDictionary,
+        is_predefined: bool,
     ):
         if is_predefined:
-            pset_classes = [c for c in bsdd_dictionary.Classes if c.Name == pset_name and c.ClassType == "GroupOfProperties"]
+            pset_classes = [
+                c
+                for c in bsdd_dictionary.Classes
+                if c.Name == pset_name and c.ClassType == "GroupOfProperties"
+            ]
         else:
             pset_classes = [c for c in bsdd_dictionary.Classes if c.Name == pset_name]
         if not pset_classes:
@@ -223,6 +239,39 @@ class PropertySetTableView(ItemViewTool):
             RelationType="HasReference", RelatedClassUri=uri, RelatedClassName=pset_class.Name
         )
         bsdd_class.ClassRelations.append(relation)
+        relation._set_parent(bsdd_class)
+
+    @classmethod
+    def remove_pset_relation(cls, bsdd_class: BsddClass, pset_name: str):
+        from bsdd_gui import tool
+
+        bsdd_dictionary = tool.Project.get()
+        relations_to_remove = [
+            cr
+            for cr in bsdd_class.ClassRelations
+            if cr.RelationType == "HasReference" and cr.RelatedClassName == pset_name
+        ]
+
+        pset_uris = {
+            class_utils.build_bsdd_uri(cl, bsdd_dictionary)
+            for cl in bsdd_dictionary.Classes
+            if cl.ClassType == "GroupOfProperties"
+        }
+
+        for relation in relations_to_remove:
+            if relation.RelatedClassUri in pset_uris:
+                #If the related class is a GroupOfProperties of the same dictionary
+                bsdd_class.ClassRelations.remove(relation)
+            elif dictionary_utils.get_dictionary_path_from_uri(
+                relation.RelatedClassUri
+            ) == dictionary_utils.bsdd_dictionary_url(bsdd_dictionary):
+                #check if the reference is from the same dictionary but a GroupOfProperties
+                pass
+            else:
+                #Load the related class from the web and check if it is a GroupOfProperties, if yes remove the relation
+                related_class = class_utils.get_class_by_uri(bsdd_dictionary, relation.RelatedClassUri)
+                if related_class and related_class.ClassType == "GroupOfProperties":
+                    bsdd_class.ClassRelations.remove(relation)
 
     @classmethod
     def get_related_psets(
