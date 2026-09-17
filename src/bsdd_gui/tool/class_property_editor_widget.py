@@ -346,3 +346,9 @@ class ClassPropertyEditorWidget(DialogTool):
         for widget in cls.get_widgets():
             widget: ui.ClassPropertyEditor
             cls.validate_all_fields(widget)
+
+    @classmethod
+    def handle_property_code_change(cls,bsdd_property:BsddProperty,old_code:str):
+        for widget in cls.get_widgets():
+            if widget.le_code.text() == old_code:
+                widget.le_code.setText(bsdd_property.Code)

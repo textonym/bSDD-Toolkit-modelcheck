@@ -6,6 +6,8 @@ from PySide6.QtCore import QCoreApplication
 from bsdd_json.utils import property_utils as prop_utils
 from typing import get_args
 from bsdd_json.type_hints import COUNTRY_CODE, LANGUAGE_ISO_CODE, DOCUMENT_TYPE
+from bsdd_json.utils import property_utils
+
 import qtawesome as qta
 if TYPE_CHECKING:
     from bsdd_gui import tool
@@ -187,6 +189,16 @@ def connect_widget(
     widget.closed.connect(
         lambda w=widget: allowed_values_table.unregister_view(w.tv_allowed_values)
     )
+
+
+def update_property_code(
+    bsdd_property: BsddClassProperty,
+    old_code: str,
+    property_editor: Type[tool.PropertyEditorWidget],
+    project: Type[tool.Project],
+):
+    for class_properties in property_utils.get_class_properties_from_property_code(old_code,project.get()):
+        class_properties.PropertyCode = bsdd_property.Code
 
 
 # TODO: add tablevalue add/remove function

@@ -39,3 +39,6 @@ def widget_created(widget: ui.PropertyEditor):
     )
     core.register_validators(widget, tool.PropertyEditorWidget, tool.Util, tool.Project)
     core.connect_widget(widget, tool.PropertyEditorWidget, tool.AllowedValuesTableView)
+
+def update_property_code(bsdd_property: BsddProperty, old_code: str):
+    core.update_property_code(bsdd_property, old_code, tool.PropertyEditorWidget, tool.Project)

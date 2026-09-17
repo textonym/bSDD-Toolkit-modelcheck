@@ -5,7 +5,7 @@ import bsdd_gui
 from bsdd_gui.presets.tool_presets import DialogTool, DialogSignals
 from bsdd_json import BsddClassProperty, BsddDictionary, BsddProperty
 from bsdd_gui.module.property_editor_widget import ui
-from PySide6.QtWidgets import QWidget
+from PySide6.QtWidgets import QLineEdit, QWidget
 from PySide6.QtCore import Signal, Qt
 from bsdd_gui.module.property_editor_widget import trigger
 
@@ -18,6 +18,7 @@ class Signals(DialogSignals):
     new_property_requested = Signal(
         object, QWidget
     )  # blueprint: dict[] with property values, ParentWidget
+    code_changed = Signal(BsddProperty, str)  # property, old_code
 
 
 class PropertyEditorWidget(DialogTool):
@@ -49,6 +50,20 @@ class PropertyEditorWidget(DialogTool):
         cls.signals.new_property_requested.connect(trigger.create_dialog)
         # Autoupdate Values
         cls.signals.field_changed.connect(lambda w, f: cls.sync_to_model(w, w.bsdd_data, f))
+        cls.signals.code_changed.connect(lambda p, c: trigger.update_property_code(p, c))
+
+    @classmethod
+    def sync_to_model(cls, widget: ui.PropertyEditor, bsdd_property: BsddProperty, field: QWidget):
+        """
+        Catch Code Change
+        """
+        old_code = bsdd_property.Code
+        new_code = widget.le_code.text()
+        super().sync_to_model(widget, bsdd_property, field)
+
+        if field == widget.le_code and cls.is_field_valid(field, widget):
+            if old_code != new_code:
+                cls.signals.code_changed.emit(bsdd_property, old_code)
 
     @classmethod
     def request_new_property(cls, blueprint: dict = None, parent=None):
