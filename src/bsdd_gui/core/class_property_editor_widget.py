@@ -53,7 +53,7 @@ def connect_signals(
 
     project.signals.property_added.connect(lambda _: validate_widgets())
     project.signals.property_removed.connect(lambda _: validate_widgets())
-
+    property_editor.signals.code_changed.connect(class_property_editor.handle_property_code_change)
 
 def retranslate_ui(class_property_editor: Type[tool.ClassPropertyEditorWidget]):
     for widget in class_property_editor.get_widgets():
