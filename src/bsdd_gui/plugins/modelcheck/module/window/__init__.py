@@ -1,21 +1,26 @@
-from . import prop, trigger, ui
-
-
 def register():
     pass
 
 
 def activate():
-    trigger.activate()
+    from bsdd_gui.plugins.modelcheck.core import window as core
+
+    core.connect_to_main_window()
 
 
 def deactivate():
-    trigger.deactivate()
+    from bsdd_gui.plugins.modelcheck.core import window as core
+
+    core.remove_main_menu_actions()
 
 
 def retranslate_ui():
-    trigger.retranslate_ui()
+    from bsdd_gui.plugins.modelcheck.core import window as core
+
+    core.retranslate_ui()
 
 
 def on_new_project():
-    trigger.on_new_project()
+    from bsdd_gui.plugins.modelcheck.core import window as core
+
+    core.on_new_project()
