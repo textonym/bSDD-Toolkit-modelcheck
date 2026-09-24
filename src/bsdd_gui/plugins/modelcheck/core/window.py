@@ -5,7 +5,7 @@ from PySide6.QtWidgets import QMessageBox
 
 from bsdd_gui import tool
 from bsdd_gui.plugins.modelcheck.core.modelcheck import check_element
-from bsdd_gui.plugins.modelcheck.core.results import create_excel_report
+from bsdd_gui.plugins.modelcheck.core.results import create_bcf_report, create_excel_report
 from bsdd_gui.plugins.modelcheck.module.window import prop, ui
 from bsdd_gui.plugins.modelcheck.tool.modelcheck import Modelcheck
 from bsdd_gui.plugins.modelcheck.tool.window import Window
@@ -105,9 +105,13 @@ def run_check():
             pct = 20 + int((idx / total) * 70)
             win.progress_bar.setValue(pct)
 
-    win.status_label.setText("Writing Excel report...")
+    win.status_label.setText("Writing report...")
     win.progress_bar.setValue(95)
-    create_excel_report(issues, export_path)
+    export_ext = os.path.splitext(export_path)[1].lower()
+    if export_ext == ".bcf":
+        create_bcf_report(issues, export_path)
+    else:
+        create_excel_report(issues, export_path)
 
     win.progress_bar.setValue(100)
     win.status_label.setText(f"Done! {len(issues)} issues found.")

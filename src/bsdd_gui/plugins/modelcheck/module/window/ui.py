@@ -101,7 +101,7 @@ class ModelcheckWindow(QWidget):
                 self.export_input.setText(path.rsplit('.', 1)[0] + "_modelcheck.xlsx")
 
     def _browse_export(self):
-        filter_str = "Excel Files (*.xlsx)"
+        filter_str = "Excel Files (*.xlsx);;BCF Files (*.bcf)"
         path, _ = QFileDialog.getSaveFileName(self, self.tr("Select Export Path"), "", filter_str)
         if path:
             self.export_input.setText(path)

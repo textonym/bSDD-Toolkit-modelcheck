@@ -1,8 +1,10 @@
+import zipfile
 from types import SimpleNamespace
 
 from bsdd_json import BsddClass, BsddClassProperty, BsddDictionary, BsddProperty
 
 from bsdd_gui.plugins.modelcheck.core import modelcheck
+from bsdd_gui.plugins.modelcheck.core.results import create_bcf_report
 from bsdd_gui.plugins.modelcheck.module import constants
 
 
@@ -45,3 +47,24 @@ def test_check_element_reports_property_issues(monkeypatch):
 
     assert issues
     assert any(issue["issue_type"] == constants.DATATYPE_ISSUE for issue in issues)
+
+
+def test_create_bcf_report_writes_markup_archive(tmp_path):
+    issues = [{
+        "GUID": "GUID-1",
+        "creation_date": "2026-01-01 12:00:00",
+        "short_description": "Datatype violation",
+        "issue_type": constants.DATATYPE_ISSUE,
+        "PropertySet": "Pset_Test",
+        "Property": "Height",
+        "description": "Value is not a valid real number",
+    }]
+
+    export_path = tmp_path / "modelcheck.bcf"
+    create_bcf_report(issues, str(export_path))
+
+    with zipfile.ZipFile(export_path) as zf:
+        assert {"bcf.version", "markup.bcf"}.issubset(zf.namelist())
+        markup = zf.read("markup.bcf").decode("utf-8")
+        assert "Datatype violation" in markup
+        assert "Modelcheck" in markup
